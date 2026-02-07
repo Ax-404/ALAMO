@@ -26,13 +26,19 @@ cd ALAMO
 
 - Système Linux (Debian/Ubuntu recommandé)
 - Accès root (sudo)
+- Git (généralement déjà installé sur Raspberry Pi OS)
 - GPG installé (pour les scripts de gestion de mots de passe/liens)
 
 ```bash
+# Vérifier/Installer Git (si nécessaire)
+sudo ./scripts/install-git.sh
+
 # Installer GPG si nécessaire
 sudo apt-get update
 sudo apt-get install -y gnupg
 ```
+
+**Note :** Git est généralement déjà pré-installé sur Raspberry Pi OS. Le script `install-git.sh` vérifie simplement sa présence et l'installe uniquement si nécessaire.
 
 ## 🛠️ Scripts d'Installation
 
