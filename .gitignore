@@ -20,6 +20,11 @@ links.txt.gpg
 ehthumbs.db
 Thumbs.db
 
+# Fichiers d'éditeur
+.vscode/
+.idea/
+*.sublime-*
+
 # Fichiers temporaires
 *.tmp
 *.temp
