@@ -2,6 +2,8 @@
 
 Collection de scripts pour configurer et sécuriser un serveur Linux (optimisé pour Raspberry Pi).
 
+🔗 **Dépôt GitHub :** [https://github.com/Ax-404/ALAMO](https://github.com/Ax-404/ALAMO)
+
 ## 📋 Table des matières
 
 - [Installation](#installation)
@@ -12,6 +14,13 @@ Collection de scripts pour configurer et sécuriser un serveur Linux (optimisé 
 - [Structure du Projet](#structure-du-projet)
 
 ## 🚀 Installation
+
+### Cloner le dépôt
+
+```bash
+git clone https://github.com/Ax-404/ALAMO.git
+cd ALAMO
+```
 
 ### Prérequis
 
