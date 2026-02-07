@@ -251,9 +251,43 @@ tailscale ip -4
 
 2. Configurez cette IP comme serveur DNS sur chaque appareil :
    - **Windows :** Paramètres → Réseau → Adapter → Propriétés → DNS
-   - **macOS :** Préférences Système → Réseau → Avancé → DNS
+   - **macOS :** Préférences Système → Réseau → Avancé → DNS (voir détails ci-dessous)
    - **Android :** Paramètres → Wi-Fi → Modifier → DNS
    - **iOS :** Paramètres → Wi-Fi → (i) → Configurer DNS
+
+#### Configuration DNS sur macOS (détails)
+
+**Important :** L'IP Tailscale de votre Raspberry Pi est **à la fois** :
+- L'adresse IP Tailscale de votre Raspberry Pi
+- Le serveur DNS Pi-hole (car Pi-hole est installé sur cette machine)
+
+**Où configurer :**
+- **DNS Server (Serveur DNS)** : C'est ici que vous mettez l'IP Tailscale du Raspberry Pi
+- **Search Domain (Domaine de recherche)** : Ne mettez pas l'IP ici (ce champ sert aux domaines de recherche automatiques)
+
+**Étapes :**
+1. Ouvrez **Préférences Système** → **Réseau**
+2. Sélectionnez votre connexion (Wi‑Fi ou Ethernet)
+3. Cliquez sur **Avancé...**
+4. Allez dans l'onglet **DNS**
+5. Dans la section **Serveurs DNS**, cliquez sur **+**
+6. Ajoutez l'IP Tailscale de votre Raspberry Pi (ex: `100.x.x.x`)
+7. Cliquez sur **OK**
+
+**Ordre de priorité :** macOS utilise les serveurs DNS dans l'ordre de la liste. Pour que Pi-hole fonctionne :
+- Mettez l'IP Tailscale du Raspberry Pi **en premier** dans la liste
+- Si vous avez le DNS Tailscale par défaut (`100.100.100.100`), retirez-le ou mettez-le après Pi-hole
+
+**Vérification :**
+```bash
+# Vérifier quel serveur DNS est utilisé
+scutil --dns | grep nameserver
+
+# Tester une résolution DNS
+nslookup google.com
+```
+
+Vous devriez voir l'IP Tailscale de votre Raspberry Pi dans la liste, et `nslookup` devrait l'utiliser en premier.
 
 **Si vous utilisez l'interface principale (eth0/wlan0) :**
 
@@ -262,16 +296,28 @@ tailscale ip -4
 
 ### 4. Vérifier que ça fonctionne
 
+**Sur le Raspberry Pi :**
 ```bash
 # Vérifier le statut de Pi-hole
 pihole status
 
-# Vérifier les statistiques
-pihole -c -e
-
 # Voir les logs en temps réel
-pihole -t
+pihole tail
 ```
+
+**Sur votre Mac (ou autre appareil) :**
+```bash
+# Vérifier quel serveur DNS est utilisé
+scutil --dns | grep nameserver
+
+# Tester une résolution DNS
+nslookup google.com
+
+# Vérifier la configuration DNS complète
+scutil --dns
+```
+
+Vous devriez voir l'IP Tailscale de votre Raspberry Pi dans la liste des serveurs DNS, et `nslookup` devrait l'utiliser.
 
 ### 5. Tester le blocage
 
