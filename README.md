@@ -15,6 +15,15 @@ Collection de scripts pour configurer et sécuriser un serveur Linux (optimisé 
 
 ## 🚀 Installation
 
+### Installation de Git (si nécessaire)
+
+Sur Raspberry Pi OS Lite, Git n'est pas installé par défaut. Installez-le d'abord :
+
+```bash
+sudo apt-get update
+sudo apt-get install -y git
+```
+
 ### Cloner le dépôt
 
 ```bash
