@@ -34,6 +34,24 @@ sudo apt-get update
 sudo apt-get install -y gnupg
 ```
 
+## 🛠️ Scripts d'Installation
+
+### Installation de Git
+
+**`scripts/install-git.sh`**
+
+Vérifie si Git est installé et l'installe si nécessaire. Git est généralement déjà pré-installé sur Raspberry Pi OS.
+
+```bash
+sudo ./scripts/install-git.sh
+```
+
+**Fonctionnalités :**
+- Vérification de la présence de Git
+- Installation automatique si absent
+- Affichage de la version installée
+- Instructions pour la configuration
+
 ## 🔒 Scripts de Sécurité
 
 ### Protection SSH avec Fail2ban
