@@ -301,8 +301,9 @@ pihole start
 ### Mise à jour
 
 ```bash
-# Mettre à jour les listes de blocage
-pihole -g
+# Mettre à jour les listes de blocage - NOUVELLE SYNTAXE
+pihole updateGravity
+# (ancienne commande: pihole -g)
 
 # Mettre à jour Pi-hole
 pihole updatePihole
@@ -311,30 +312,56 @@ pihole updatePihole
 ### Gestion des domaines
 
 ```bash
-# Autoriser un domaine (whitelist)
-pihole -w example.com
+# Autoriser un domaine (whitelist) - NOUVELLE SYNTAXE
+pihole allow example.com
+# ou
+pihole allowlist example.com
 
-# Bloquer un domaine manuellement
-pihole -b example.com
+# Bloquer un domaine manuellement - NOUVELLE SYNTAXE
+pihole deny example.com
+# ou
+pihole denylist example.com
 
 # Chercher un domaine dans les listes
-pihole -q example.com
+pihole query example.com
 
 # Supprimer un domaine de la whitelist
-pihole -w -d example.com
+pihole allow -d example.com
+# ou
+pihole allowlist -d example.com
 
 # Supprimer un domaine de la blacklist
-pihole -b -d example.com
+pihole deny -d example.com
+# ou
+pihole denylist -d example.com
+
+# Options avancées
+# Bloquer avec regex
+pihole regex '.*example\.com.*'
+
+# Autoriser avec regex
+pihole allow-regex '.*example\.com.*'
+
+# Bloquer avec wildcard
+pihole wildcard '*.example.com'
+
+# Autoriser avec wildcard
+pihole allow-wild '*.example.com'
 ```
+
+**Note :** Les anciennes commandes `-w` et `-b` ne fonctionnent plus dans les versions récentes de Pi-hole. Utilisez `allow`/`allowlist` et `deny`/`denylist`.
 
 ### Logs et statistiques
 
 ```bash
-# Voir les logs en temps réel
-pihole -t
+# Voir les logs en temps réel - NOUVELLE SYNTAXE
+pihole tail
+# ou avec filtre
+pihole tail example.com
+# (ancienne commande: pihole -t)
 
 # Voir les statistiques
-pihole -c -e
+pihole status
 
 # Voir les requêtes récentes
 pihole querylog
@@ -410,11 +437,13 @@ sudo pihole restartdns
 ### Site bloqué par erreur (faux positif)
 
 ```bash
-# Autoriser le domaine
-pihole -w example.com
+# Autoriser le domaine - NOUVELLE SYNTAXE
+pihole allow example.com
+# ou
+pihole allowlist example.com
 
 # Mettre à jour les listes
-pihole -g
+pihole updateGravity
 ```
 
 ### Problème d'espace disque
