@@ -1,0 +1,37 @@
+# Fichiers sensibles - NE JAMAIS COMMITER
+passwords.txt
+passwords.txt.gpg
+links.txt
+links.txt.gpg
+.passwords-password
+.links-password
+
+# Fichiers de configuration sensibles
+.env
+.env.local
+.env.*.local
+
+# Fichiers système
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+
+# Répertoires de données
+vaultwarden-data/
+pihole-data/
+
+# Fichiers Docker (si utilisés)
+docker-compose.vaultwarden.yml
+*.gpg.backup
