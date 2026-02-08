@@ -4,6 +4,73 @@
 set -e
 
 echo "🔐 Configuration SSH pour GitHub..."
+echo ""
+
+# Fonction pour la solution rapide (réinitialisation complète)
+quick_fix() {
+    echo "🔧 Solution rapide - Réinitialisation complète..."
+    echo ""
+    
+    # 1. Créer le répertoire .ssh
+    echo "1. Création du répertoire .ssh..."
+    mkdir -p ~/.ssh
+    chmod 700 ~/.ssh
+    
+    # 2. Générer la clé SSH (sans mot de passe pour simplifier)
+    echo "2. Génération de la clé SSH..."
+    ssh-keygen -t ed25519 -C "raspberrypi@alamo" -f ~/.ssh/id_ed25519 -N "" -y 2>/dev/null || \
+    ssh-keygen -t ed25519 -C "raspberrypi@alamo" -f ~/.ssh/id_ed25519 -N ""
+    
+    # 3. Configurer ssh-agent
+    echo "3. Configuration de ssh-agent..."
+    eval "$(ssh-agent -s)" > /dev/null 2>&1
+    ssh-add ~/.ssh/id_ed25519 2>/dev/null || true
+    
+    # 4. Créer la config SSH
+    echo "4. Création de la configuration SSH..."
+    cat > ~/.ssh/config << 'EOF'
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+EOF
+    chmod 600 ~/.ssh/config
+    
+    # 5. Afficher la clé publique
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📋 Votre clé publique SSH:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    cat ~/.ssh/id_ed25519.pub
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    
+    echo "✅ Configuration terminée!"
+    echo ""
+    echo "📝 Prochaines étapes:"
+    echo "   1. Copiez la clé publique ci-dessus"
+    echo "   2. Ajoutez-la sur GitHub: https://github.com/settings/ssh/new"
+    echo "   3. Testez avec: ssh -T git@github.com"
+    echo "   4. Si ça fonctionne: git push origin main"
+    echo ""
+}
+
+# Menu principal
+echo "Choisissez une option:"
+echo "  1) Configuration normale (recommandé)"
+echo "  2) Solution rapide (si vous avez des problèmes)"
+echo ""
+read -p "Choix (1 ou 2): " menu_choice
+
+if [ "$menu_choice" = "2" ]; then
+    quick_fix
+    exit 0
+fi
+
+echo ""
 
 # Vérifier que Git est installé
 if ! command -v git &> /dev/null; then
