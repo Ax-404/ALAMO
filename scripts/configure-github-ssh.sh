@@ -16,17 +16,22 @@ quick_fix() {
     mkdir -p ~/.ssh
     chmod 700 ~/.ssh
     
-    # 2. Générer la clé SSH (sans mot de passe pour simplifier)
+    # 2. Supprimer l'ancienne clé si elle existe
+    if [ -f ~/.ssh/id_ed25519 ]; then
+        echo "   Suppression de l'ancienne clé..."
+        rm -f ~/.ssh/id_ed25519 ~/.ssh/id_ed25519.pub
+    fi
+    
+    # 3. Générer la clé SSH (sans mot de passe pour simplifier)
     echo "2. Génération de la clé SSH..."
-    ssh-keygen -t ed25519 -C "raspberrypi@alamo" -f ~/.ssh/id_ed25519 -N "" -y 2>/dev/null || \
     ssh-keygen -t ed25519 -C "raspberrypi@alamo" -f ~/.ssh/id_ed25519 -N ""
     
-    # 3. Configurer ssh-agent
+    # 4. Configurer ssh-agent
     echo "3. Configuration de ssh-agent..."
     eval "$(ssh-agent -s)" > /dev/null 2>&1
     ssh-add ~/.ssh/id_ed25519 2>/dev/null || true
     
-    # 4. Créer la config SSH
+    # 5. Créer la config SSH
     echo "4. Création de la configuration SSH..."
     cat > ~/.ssh/config << 'EOF'
 Host github.com
@@ -37,7 +42,7 @@ Host github.com
 EOF
     chmod 600 ~/.ssh/config
     
-    # 5. Afficher la clé publique
+    # 6. Afficher la clé publique
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "📋 Votre clé publique SSH:"
