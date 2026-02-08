@@ -67,6 +67,24 @@ sudo ./scripts/install-git.sh
 - Affichage de la version installée
 - Instructions pour la configuration
 
+### Configuration SSH pour GitHub
+
+**`scripts/configure-github-ssh.sh`**
+
+Configure l'authentification SSH pour GitHub (nécessaire pour push/pull).
+
+```bash
+./scripts/configure-github-ssh.sh
+```
+
+**Fonctionnalités :**
+- Génération d'une clé SSH (ed25519)
+- Instructions pour ajouter la clé sur GitHub
+- Configuration automatique du remote Git en SSH
+- Test de la connexion
+
+**Note :** GitHub n'accepte plus les mots de passe pour Git. Utilisez ce script pour configurer SSH.
+
 ## 🔒 Scripts de Sécurité
 
 ### Protection SSH avec Fail2ban
