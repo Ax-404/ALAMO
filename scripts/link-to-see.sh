@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script pour gérer des liens sensibles dans un fichier .txt chiffré avec mot de passe
+# Script pour éditer des liens sensibles dans un fichier .txt chiffré avec mot de passe
 
 set -e
 
@@ -8,6 +8,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LINKS_FILE="$PROJECT_ROOT/links.txt"
 LINKS_ENCRYPTED="$PROJECT_ROOT/links.txt.gpg"
 PASSWORD_FILE="$PROJECT_ROOT/.links-password"
+EDITOR="${EDITOR:-nano}"
 
 echo "🔗 Gestionnaire de liens protégés"
 
@@ -16,14 +17,9 @@ show_menu() {
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Menu:"
-    echo "  1) Ajouter un lien"
-    echo "  2) Voir les liens"
-    echo "  3) Voir le contenu brut de links.txt"
-    echo "  4) Supprimer un lien"
-    echo "  5) Chercher un lien"
-    echo "  6) Ouvrir un lien"
-    echo "  7) Changer le mot de passe"
-    echo "  8) Quitter"
+    echo "  1) Éditer links.txt"
+    echo "  2) Changer le mot de passe"
+    echo "  3) Quitter"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 }
@@ -98,237 +94,36 @@ encrypt_file() {
     fi
 }
 
-# Fonction pour ajouter un lien
-add_link() {
+# Fonction pour éditer le fichier
+edit_file() {
+    echo ""
+    echo "📝 Édition de links.txt..."
+    
+    # Déchiffrer le fichier
     decrypt_file
     
+    # Créer un fichier temporaire pour l'édition
+    TEMP_FILE=$(mktemp)
+    cp "$LINKS_FILE" "$TEMP_FILE"
+    
+    # Ouvrir l'éditeur
+    echo "   Ouverture de l'éditeur ($EDITOR)..."
+    echo "   (Le fichier sera automatiquement chiffré après votre édition)"
     echo ""
-    read -p "Nom/Description du lien: " name
-    read -p "URL du lien: " url
     
-    # Valider et formater l'URL
-    if [[ ! "$url" =~ ^https?:// ]]; then
-        echo "⚠️  L'URL ne commence pas par http:// ou https://, ajout de https://"
-        url="https://$url"
-    fi
-    
-    read -p "Notes (optionnel): " notes
-    
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[$timestamp] $name|$url|$notes" >> "$LINKS_FILE"
-    
-    encrypt_file
-    echo "✅ Lien ajouté"
-}
-
-# Fonction pour voir les liens
-view_links() {
-    decrypt_file
-    
-    if [ ! -s "$LINKS_FILE" ]; then
-        echo "ℹ️  Aucun lien enregistré"
+    if $EDITOR "$TEMP_FILE"; then
+        # Copier le fichier édité
+        cp "$TEMP_FILE" "$LINKS_FILE"
+        rm -f "$TEMP_FILE"
+        
+        # Chiffrer le fichier
         encrypt_file
-        return
-    fi
-    
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📋 Liens protégés:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    line_num=1
-    while IFS='|' read -r line; do
-        if [[ "$line" =~ ^\[(.*)\]\ (.*)\|(.*)\|(.*)$ ]]; then
-            timestamp="${BASH_REMATCH[1]}"
-            name="${BASH_REMATCH[2]}"
-            url="${BASH_REMATCH[3]}"
-            notes="${BASH_REMATCH[4]}"
-            
-            echo "  $line_num) [$timestamp] $name"
-            echo "     🔗 $url"
-            if [ -n "$notes" ]; then
-                echo "     📝 Notes: $notes"
-            fi
-            echo ""
-            line_num=$((line_num + 1))
-        fi
-    done < "$LINKS_FILE"
-    
-    encrypt_file
-}
-
-# Fonction pour supprimer un lien
-delete_link() {
-    decrypt_file
-    
-    if [ ! -s "$LINKS_FILE" ]; then
-        echo "ℹ️  Aucun lien à supprimer"
-        encrypt_file
-        return
-    fi
-    
-    # Afficher une liste simplifiée
-    echo ""
-    echo "Liens:"
-    line_num=1
-    while IFS='|' read -r line; do
-        if [[ "$line" =~ ^\[(.*)\]\ (.*)\| ]]; then
-            name="${BASH_REMATCH[2]}"
-            echo "  $line_num) $name"
-            line_num=$((line_num + 1))
-        fi
-    done < "$LINKS_FILE"
-    
-    echo ""
-    read -p "Numéro du lien à supprimer: " num
-    
-    if ! [[ "$num" =~ ^[0-9]+$ ]]; then
-        echo "❌ Numéro invalide"
-        encrypt_file
-        return
-    fi
-    
-    # Créer un fichier temporaire sans la ligne à supprimer
-    temp_file=$(mktemp)
-    line_num=1
-    while IFS= read -r line; do
-        if [ "$line_num" -ne "$num" ]; then
-            echo "$line" >> "$temp_file"
-        fi
-        line_num=$((line_num + 1))
-    done < "$LINKS_FILE"
-    
-    mv "$temp_file" "$LINKS_FILE"
-    encrypt_file
-    echo "✅ Lien supprimé"
-}
-
-# Fonction pour chercher un lien
-search_link() {
-    decrypt_file
-    
-    if [ ! -s "$LINKS_FILE" ]; then
-        echo "ℹ️  Aucun lien à chercher"
-        encrypt_file
-        return
-    fi
-    
-    echo ""
-    read -p "Rechercher (nom, URL, notes): " search_term
-    
-    if [ -z "$search_term" ]; then
-        echo "❌ Terme de recherche vide"
-        encrypt_file
-        return
-    fi
-    
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🔍 Résultats de recherche pour: $search_term"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    found=0
-    line_num=1
-    while IFS='|' read -r line; do
-        if [[ "$line" =~ $search_term ]]; then
-            if [[ "$line" =~ ^\[(.*)\]\ (.*)\|(.*)\|(.*)$ ]]; then
-                timestamp="${BASH_REMATCH[1]}"
-                name="${BASH_REMATCH[2]}"
-                url="${BASH_REMATCH[3]}"
-                notes="${BASH_REMATCH[4]}"
-                
-                echo "  $line_num) [$timestamp] $name"
-                echo "     🔗 $url"
-                if [ -n "$notes" ]; then
-                    echo "     📝 Notes: $notes"
-                fi
-                echo ""
-                found=1
-                line_num=$((line_num + 1))
-            fi
-        fi
-    done < "$LINKS_FILE"
-    
-    if [ $found -eq 0 ]; then
-        echo "ℹ️  Aucun résultat trouvé"
-    fi
-    
-    encrypt_file
-}
-
-# Fonction pour ouvrir un lien
-open_link() {
-    decrypt_file
-    
-    if [ ! -s "$LINKS_FILE" ]; then
-        echo "ℹ️  Aucun lien à ouvrir"
-        encrypt_file
-        return
-    fi
-    
-    # Afficher la liste
-    echo ""
-    echo "Liens:"
-    line_num=1
-    declare -a urls
-    while IFS='|' read -r line; do
-        if [[ "$line" =~ ^\[(.*)\]\ (.*)\|(.*)\| ]]; then
-            name="${BASH_REMATCH[2]}"
-            url="${BASH_REMATCH[3]}"
-            echo "  $line_num) $name"
-            urls[$line_num]="$url"
-            line_num=$((line_num + 1))
-        fi
-    done < "$LINKS_FILE"
-    
-    echo ""
-    read -p "Numéro du lien à ouvrir: " num
-    
-    if ! [[ "$num" =~ ^[0-9]+$ ]] || [ -z "${urls[$num]}" ]; then
-        echo "❌ Numéro invalide"
-        encrypt_file
-        return
-    fi
-    
-    url="${urls[$num]}"
-    echo "🌐 Ouverture de: $url"
-    
-    # Essayer d'ouvrir le lien selon le système
-    if command -v xdg-open &> /dev/null; then
-        xdg-open "$url" 2>/dev/null &
-    elif command -v open &> /dev/null; then
-        open "$url" 2>/dev/null &
+        echo "✅ Modifications sauvegardées"
     else
-        echo "   URL: $url"
-        echo "   (Copiez-collez dans votre navigateur)"
-    fi
-    
-    encrypt_file
-}
-
-# Fonction pour voir le contenu brut du fichier
-view_raw_file() {
-    decrypt_file
-    
-    if [ ! -s "$LINKS_FILE" ]; then
-        echo "ℹ️  Le fichier links.txt est vide"
+        echo "⚠️  Édition annulée"
+        rm -f "$TEMP_FILE"
         encrypt_file
-        return
     fi
-    
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📄 Contenu brut de links.txt:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    cat "$LINKS_FILE"
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    encrypt_file
 }
 
 # Fonction pour changer le mot de passe
@@ -382,6 +177,18 @@ if ! command -v gpg &> /dev/null; then
     exit 1
 fi
 
+# Vérifier que l'éditeur est disponible
+if ! command -v $EDITOR &> /dev/null; then
+    echo "⚠️  L'éditeur '$EDITOR' n'est pas disponible"
+    echo "   Installation de nano..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y nano
+    else
+        echo "   Veuillez installer un éditeur de texte (nano, vim, etc.)"
+        exit 1
+    fi
+fi
+
 # Initialiser le mot de passe si nécessaire
 init_password
 
@@ -392,27 +199,12 @@ while true; do
     
     case $choice in
         1)
-            add_link
+            edit_file
             ;;
         2)
-            view_links
-            ;;
-        3)
-            view_raw_file
-            ;;
-        4)
-            delete_link
-            ;;
-        5)
-            search_link
-            ;;
-        6)
-            open_link
-            ;;
-        7)
             change_password
             ;;
-        8)
+        3)
             echo "👋 Au revoir!"
             exit 0
             ;;

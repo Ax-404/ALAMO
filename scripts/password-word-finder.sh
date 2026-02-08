@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script pour gérer des mots de passe dans un fichier .txt chiffré avec mot de passe
+# Script pour éditer des mots de passe dans un fichier .txt chiffré avec mot de passe
 
 set -e
 
@@ -8,6 +8,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PASSWORDS_FILE="$PROJECT_ROOT/passwords.txt"
 PASSWORDS_ENCRYPTED="$PROJECT_ROOT/passwords.txt.gpg"
 PASSWORD_FILE="$PROJECT_ROOT/.passwords-password"
+EDITOR="${EDITOR:-nano}"
 
 echo "🔐 Gestionnaire de mots de passe"
 
@@ -16,13 +17,9 @@ show_menu() {
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Menu:"
-    echo "  1) Ajouter un mot de passe"
-    echo "  2) Voir les mots de passe"
-    echo "  3) Voir le contenu brut de passwords.txt"
-    echo "  4) Supprimer un mot de passe"
-    echo "  5) Chercher un mot de passe"
-    echo "  6) Changer le mot de passe"
-    echo "  7) Quitter"
+    echo "  1) Éditer passwords.txt"
+    echo "  2) Changer le mot de passe"
+    echo "  3) Quitter"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
 }
@@ -97,193 +94,36 @@ encrypt_file() {
     fi
 }
 
-# Fonction pour ajouter un mot de passe
-add_password() {
+# Fonction pour éditer le fichier
+edit_file() {
+    echo ""
+    echo "📝 Édition de passwords.txt..."
+    
+    # Déchiffrer le fichier
     decrypt_file
     
+    # Créer un fichier temporaire pour l'édition
+    TEMP_FILE=$(mktemp)
+    cp "$PASSWORDS_FILE" "$TEMP_FILE"
+    
+    # Ouvrir l'éditeur
+    echo "   Ouverture de l'éditeur ($EDITOR)..."
+    echo "   (Le fichier sera automatiquement chiffré après votre édition)"
     echo ""
-    read -p "Nom/Service (ex: Gmail, Facebook): " name
-    read -p "Identifiant/Email: " username
-    read -sp "Mot de passe: " password
-    echo ""
-    read -p "URL (optionnel): " url
-    read -p "Notes (optionnel): " notes
     
-    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[$timestamp] $name|$username|$password|$url|$notes" >> "$PASSWORDS_FILE"
-    
-    encrypt_file
-    echo "✅ Mot de passe ajouté"
-}
-
-# Fonction pour voir les mots de passe
-view_passwords() {
-    decrypt_file
-    
-    if [ ! -s "$PASSWORDS_FILE" ]; then
-        echo "ℹ️  Aucun mot de passe enregistré"
+    if $EDITOR "$TEMP_FILE"; then
+        # Copier le fichier édité
+        cp "$TEMP_FILE" "$PASSWORDS_FILE"
+        rm -f "$TEMP_FILE"
+        
+        # Chiffrer le fichier
         encrypt_file
-        return
-    fi
-    
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🔑 Mots de passe:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    line_num=1
-    while IFS='|' read -r line; do
-        if [[ "$line" =~ ^\[(.*)\]\ (.*)\|(.*)\|(.*)\|(.*)\|(.*)$ ]]; then
-            timestamp="${BASH_REMATCH[1]}"
-            name="${BASH_REMATCH[2]}"
-            username="${BASH_REMATCH[3]}"
-            password="${BASH_REMATCH[4]}"
-            url="${BASH_REMATCH[5]}"
-            notes="${BASH_REMATCH[6]}"
-            
-            echo "  $line_num) [$timestamp] $name"
-            echo "     👤 Identifiant: $username"
-            echo "     🔑 Mot de passe: $password"
-            if [ -n "$url" ]; then
-                echo "     🌐 URL: $url"
-            fi
-            if [ -n "$notes" ]; then
-                echo "     📝 Notes: $notes"
-            fi
-            echo ""
-            line_num=$((line_num + 1))
-        fi
-    done < "$PASSWORDS_FILE"
-    
-    encrypt_file
-}
-
-# Fonction pour supprimer un mot de passe
-delete_password() {
-    decrypt_file
-    
-    if [ ! -s "$PASSWORDS_FILE" ]; then
-        echo "ℹ️  Aucun mot de passe à supprimer"
+        echo "✅ Modifications sauvegardées"
+    else
+        echo "⚠️  Édition annulée"
+        rm -f "$TEMP_FILE"
         encrypt_file
-        return
     fi
-    
-    # Afficher une liste simplifiée
-    echo ""
-    echo "Mots de passe:"
-    line_num=1
-    while IFS='|' read -r line; do
-        if [[ "$line" =~ ^\[(.*)\]\ (.*)\| ]]; then
-            name="${BASH_REMATCH[2]}"
-            echo "  $line_num) $name"
-            line_num=$((line_num + 1))
-        fi
-    done < "$PASSWORDS_FILE"
-    
-    echo ""
-    read -p "Numéro du mot de passe à supprimer: " num
-    
-    if ! [[ "$num" =~ ^[0-9]+$ ]]; then
-        echo "❌ Numéro invalide"
-        encrypt_file
-        return
-    fi
-    
-    # Créer un fichier temporaire sans la ligne à supprimer
-    temp_file=$(mktemp)
-    line_num=1
-    while IFS= read -r line; do
-        if [ "$line_num" -ne "$num" ]; then
-            echo "$line" >> "$temp_file"
-        fi
-        line_num=$((line_num + 1))
-    done < "$PASSWORDS_FILE"
-    
-    mv "$temp_file" "$PASSWORDS_FILE"
-    encrypt_file
-    echo "✅ Mot de passe supprimé"
-}
-
-# Fonction pour chercher un mot de passe
-search_password() {
-    decrypt_file
-    
-    if [ ! -s "$PASSWORDS_FILE" ]; then
-        echo "ℹ️  Aucun mot de passe à chercher"
-        encrypt_file
-        return
-    fi
-    
-    echo ""
-    read -p "Rechercher (nom, identifiant, URL): " search_term
-    
-    if [ -z "$search_term" ]; then
-        echo "❌ Terme de recherche vide"
-        encrypt_file
-        return
-    fi
-    
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "🔍 Résultats de recherche pour: $search_term"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    found=0
-    while IFS='|' read -r line; do
-        if [[ "$line" =~ $search_term ]]; then
-            if [[ "$line" =~ ^\[(.*)\]\ (.*)\|(.*)\|(.*)\|(.*)\|(.*)$ ]]; then
-                timestamp="${BASH_REMATCH[1]}"
-                name="${BASH_REMATCH[2]}"
-                username="${BASH_REMATCH[3]}"
-                password="${BASH_REMATCH[4]}"
-                url="${BASH_REMATCH[5]}"
-                notes="${BASH_REMATCH[6]}"
-                
-                echo "  [$timestamp] $name"
-                echo "     👤 Identifiant: $username"
-                echo "     🔑 Mot de passe: $password"
-                if [ -n "$url" ]; then
-                    echo "     🌐 URL: $url"
-                fi
-                if [ -n "$notes" ]; then
-                    echo "     📝 Notes: $notes"
-                fi
-                echo ""
-                found=1
-            fi
-        fi
-    done < "$PASSWORDS_FILE"
-    
-    if [ $found -eq 0 ]; then
-        echo "ℹ️  Aucun résultat trouvé"
-    fi
-    
-    encrypt_file
-}
-
-# Fonction pour voir le contenu brut du fichier
-view_raw_file() {
-    decrypt_file
-    
-    if [ ! -s "$PASSWORDS_FILE" ]; then
-        echo "ℹ️  Le fichier passwords.txt est vide"
-        encrypt_file
-        return
-    fi
-    
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📄 Contenu brut de passwords.txt:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    cat "$PASSWORDS_FILE"
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    
-    encrypt_file
 }
 
 # Fonction pour changer le mot de passe
@@ -337,6 +177,18 @@ if ! command -v gpg &> /dev/null; then
     exit 1
 fi
 
+# Vérifier que l'éditeur est disponible
+if ! command -v $EDITOR &> /dev/null; then
+    echo "⚠️  L'éditeur '$EDITOR' n'est pas disponible"
+    echo "   Installation de nano..."
+    if command -v apt-get &> /dev/null; then
+        sudo apt-get update && sudo apt-get install -y nano
+    else
+        echo "   Veuillez installer un éditeur de texte (nano, vim, etc.)"
+        exit 1
+    fi
+fi
+
 # Initialiser le mot de passe si nécessaire
 init_password
 
@@ -347,24 +199,12 @@ while true; do
     
     case $choice in
         1)
-            add_password
+            edit_file
             ;;
         2)
-            view_passwords
-            ;;
-        3)
-            view_raw_file
-            ;;
-        4)
-            delete_password
-            ;;
-        5)
-            search_password
-            ;;
-        6)
             change_password
             ;;
-        7)
+        3)
             echo "👋 Au revoir!"
             exit 0
             ;;
