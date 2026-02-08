@@ -8,7 +8,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LINKS_FILE="$PROJECT_ROOT/links.txt"
 LINKS_ENCRYPTED="$PROJECT_ROOT/links.txt.gpg"
 PASSWORD_FILE="$PROJECT_ROOT/.links-password"
-EDITOR="${EDITOR:-nano}"
+EDITOR="nano"
 
 echo "🔗 Gestionnaire de liens protégés"
 
@@ -177,14 +177,14 @@ if ! command -v gpg &> /dev/null; then
     exit 1
 fi
 
-# Vérifier que l'éditeur est disponible
-if ! command -v $EDITOR &> /dev/null; then
-    echo "⚠️  L'éditeur '$EDITOR' n'est pas disponible"
+# Vérifier que nano est installé
+if ! command -v nano &> /dev/null; then
+    echo "⚠️  nano n'est pas installé"
     echo "   Installation de nano..."
     if command -v apt-get &> /dev/null; then
         sudo apt-get update && sudo apt-get install -y nano
     else
-        echo "   Veuillez installer un éditeur de texte (nano, vim, etc.)"
+        echo "   Veuillez installer nano: sudo apt-get install -y nano"
         exit 1
     fi
 fi
